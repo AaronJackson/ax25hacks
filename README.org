@@ -1,0 +1,39 @@
+* AX25 Hacks for Linux
+
+This is a collection of scripts which allow personal mailboxes and
+chatting over AX25 under a Linux environment. You should find a
+tutorial to follow in order to get the basics setup, and whether you
+use a hardware or software modem is up to you, so long as it provides
+an ax interface.
+
+- *axchatroom* - provides a chat room
+- *axmailbox* - provides a mailbox allowing users to send mail to each
+  other. - not done yet...
+
+** Requirements
+
+The standard AX25 linux bits are required under Linux:
+
+- Linux with the ax25 and kiss modules included (Fedora, Ubuntu,
+  etc. should be ok.
+- ax25-apps
+- ax25-tools - should include ~ax25d~ and ~axwrapper~
+
+
+
+** Setup
+
+Before starting your ~ax25~ you need to modify your
+~/etc/ax25/ax25d.conf~. Mine looks a bit like this:
+
+#+BEGIN_SRC
+[M6PIU-3 VIA ax0]
+NOCALL   * * * * * * L
+default  * * * * * * 0  root /usr/local/sbin/axwrapper axwrapper /usr/bin/axchatroom axchatroom %U
+#+END_SRC
+
+Of course, it's not a good idea to run these as root, but do whatever
+you are comfortable with.
+
+You'll also need to modify the top part of each script as they have a
+few variables each.

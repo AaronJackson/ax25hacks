@@ -1,0 +1,57 @@
+#!/bin/bash
+
+CHATLOG=/var/db/axchatroom
+INCOMING=M6PIU-3 # The call-ssid for this chatroom
+
+CALL=$1
+
+_term() {
+  kill -TERM "$child" 2>/dev/null
+  echo "---- $CALL has left [$(date)]" >> $CHATLOG
+}
+
+# Hopefully none of these should need to be called because the user
+# *should* exit with a dot on a single line, but if they don't, one of
+# these should clean up.
+trap _term SIGTERM
+trap _term SIGKILL
+trap _term SIGINT
+
+echo "M6PIU axchatroom"
+echo "A . on a single line will close this session."
+echo "-------------------------------------------------"
+
+echo "---- $CALL has joined [$(date)]" >> $CHATLOG
+
+# We start tail so it can print out the messages as they arrive, but
+# send this into the background so the while loop can read the user's
+# incoming messages. We need to keep track of this PID so we can make
+# sure it gets killed later.
+tail -n0 -f $CHATLOG &
+child=$!
+
+# Wait for incoming messages and deal with them.
+while read line ; do
+    # A dot means the use wants to leave.
+    if [ "$line" == '.' ] ; then break ; fi
+
+    # Any other incoming message:
+    echo "$CALL: $line" >> $CHATLOG
+
+    # Handles the /who command:
+    if [ "$line" == '/who' ] ; then
+	echo -n "---- " >> $CHATLOG
+	cat /proc/net/ax25 | \
+	    awk '$3 == "$INCOMING" && $4 != "*" { print $4 }' | \
+	    tr '\n' ' ' >> $CHATLOG
+	echo >> $CHATLOG
+    fi
+done
+
+# Goodbye!
+echo "---- $CALL has left [$(date)]" >> $CHATLOG
+kill -TERM "$child"
+
+
+
+
