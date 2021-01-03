@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# This is such a disgusting mess.
+
+DIR=/var/db/axmailbox/
+CALL=$1
+
+cat <<EOF
+M6PIU Mailbox
+----------------------------------------------------------------------
+EOF
+
+while echo -n "Command [B,R,S,L]: " && read cmd arg; do
+    echo
+    case $cmd in
+        L*|l*)
+            echo -e "No\tStatus\tTo\tFrom\tDate    \tTime\tSubject"
+            grep -rm1 "${CALL^^}" "$DIR" | \
+                while read x ; do
+                fname=$(echo "$x" | awk -F':' '{ print $1 }')
+		fname=$(basename "$fname")
+                status=$(echo "$fname" | awk -F'.' \
+                    '{ print $2=="r"?"Read":"Unread" } ')
+                num=$(echo "$fname" | awk -F'.' '{ print $3 }')
+		props=$(echo "$x" | awk -F':' '{$1=""; print $0 }')
+                to=$(echo "$props" | awk '{ print $2 }')
+                from=$(echo "$props" | awk '{ print $1 }')
+                date=$(echo "$props" | awk '{ print $3 }')
+                time=$(echo "$props" | awk '{ print $4 }' | tr '-' ':')
+                subj=$(echo "$props" | \
+                    awk '{ $1=""; $2=""; $3=""; $4=""; print $0 }' | \
+                    sed s'/^ *//g')
+		echo -e "$num\t$status\t$to\t$from\t$date\t$time\t$subj"
+            done
+            ;;
+	R*|r*)
+            [ -z "$arg" ] && echo "Must specify message number." && continue
+            [ ! -f "$DIR/msg."*".$arg" ] && echo "No such message." && continue
+
+            header=$(cat "$DIR/msg."*".$arg" | awk 'NR == 1')
+            to=$(echo "$header" | awk '{ print $2 }')
+            from=$(echo "$header" | awk '{ print $1 }')
+            date=$(echo "$header" | awk '{ print $3 " at " $4 }')
+
+            echo -e "\n\nMessage $arg:"
+            printf "%70s\n" ' ' | tr ' ' '-'
+            echo "To: $to"
+            echo "From: $from"
+            echo "Date: $date"
+            echo -e "\n"
+            cat "$DIR/msg."*".$arg" | awk 'NR > 1'
+            printf "\n%70s\n" ' ' | tr ' ' '-'
+            mv "$DIR/msg."*".$arg" "$DIR/msg.r.$arg" 2> /dev/null
+            ;;
+
+        S*|s*)
+            [ -z "$arg" ] && echo "Must specify recipient" && continue
+            nextmsg=$(ls $DIR | sort -n | tail -n1 | \
+                awk -F'.' '{ print $3+1 }')
+            [ -z "$nextmsg" ] && nextmsg=1
+            echo -n "Subject: " && read subj && echo
+            echo "Type your message, end with a single . on a new line"
+            date=$(date +'%Y-%m-%d %H-%M')
+            echo "${CALL^^} ${arg^^} $date $subj" > "$DIR/msg.u.$nextmsg"
+
+            while read line ; do
+                [ "$line" == "." ] && break
+                echo "$line" >> "$DIR/msg.u.$nextmsg"
+            done
+            echo "Message saved."
+            ;;
+
+        B*|b*)
+            echo "Bye!"
+            exit 0
+            ;;
+    esac
+done

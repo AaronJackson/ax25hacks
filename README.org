@@ -8,7 +8,7 @@ an ax interface.
 
 - *axchatroom* - provides a chat room
 - *axmailbox* - provides a mailbox allowing users to send mail to each
-  other. - not done yet...
+  other.
 
 ** Requirements
 
@@ -27,6 +27,10 @@ Before starting your ~ax25~ you need to modify your
 ~/etc/ax25/ax25d.conf~. Mine looks a bit like this:
 
 #+BEGIN_SRC
+[M6PIU-2 VIA ax0]
+NOCALL   * * * * * * L
+default  * * * * * * 0  root /usr/local/sbin/axwrapper axwrapper /usr/bin/axmailbox axmailbox %U
+
 [M6PIU-3 VIA ax0]
 NOCALL   * * * * * * L
 default  * * * * * * 0  root /usr/local/sbin/axwrapper axwrapper /usr/bin/axchatroom axchatroom %U
